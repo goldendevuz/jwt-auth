@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    container_name: auth_api
+    ports:
+      - "7777:7777"
+      - "7070:7070"
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+      - ./static:/usr/src/app/static
+      - ./media:/usr/src/app/media
+    restart: always
+    user: root
