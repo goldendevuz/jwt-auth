@@ -18,15 +18,15 @@ username_regex = re.compile(r"^[a-zA-Z0-9_.-]+$")
 #     regex=r'^\+998\d{9}$',
 #     message="Telefon raqam quyidagi formatda bo'lishi kerak: '+998XXXXXXXXX' (masalan, +998901234567)."
 # )
-    # phone_number = phonenumbers.parse(email_or_phone)
+    # phone_number = phonenumbers.parse(username_phone_email)
     # if phonenumbers.is_valid_number(phone_number):
-    #     email_or_phone = 'phone'
+    #     username_phone_email = 'phone'
 
-def check_email_or_phone(email_or_phone):
-    # ic(email_or_phone)
-    if re.fullmatch(email_regex, email_or_phone):
+def check_username_phone_email(username_phone_email):
+    # ic(username_phone_email)
+    if re.fullmatch(email_regex, username_phone_email):
         return "email"
-    if re.fullmatch(phone_regex, email_or_phone):
+    if re.fullmatch(phone_regex, username_phone_email):
         return "phone"
     data = {
         "message": "Email yoki telefon raqamingiz notogri"
@@ -85,18 +85,6 @@ def send_email(email, code):
             "content_type": "html"
         }
     )
-
-
-# def send_phone_code(phone, code):
-#     account_sid = config('account_sid')
-#     auth_token = config('auth_token')
-#     client = Client(account_sid, auth_token)
-#     client.messages.create(
-#         body=f"Salom do'stim! Sizning tasdiqlash kodingiz: {code}\n",
-#         from_="+99899325242",
-#         to=f"{phone}"
-#     )
-
 
 def send_phone_code(phone, code):
     import requests

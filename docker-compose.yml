@@ -3,8 +3,8 @@ services:
     build: .
     container_name: auth_api
     ports:
-      - "7777:7777"
-      - "7070:7070"
+      - "1024:1024"
+      - "1025:1025"
     env_file:
       - .env
     volumes:

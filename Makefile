@@ -11,9 +11,9 @@ cru:
 test:
 	python3 manage.py test
 run-asgi:
-	uvicorn core.asgi:application --host 0.0.0.0 --port 7777 --reload
+	uvicorn core.asgi:application --host 0.0.0.0 --port 1024 --reload
 run:
-	python manage.py runserver 0.0.0.0:7777
+	python manage.py runserver 0.0.0.0:1024
 
 #others
 git-rm-idea:
@@ -42,7 +42,7 @@ no-venv:
 re-mig:
 	make no-sqlite-db && make clear-linux && make re-django && make mig && make cru && make collect && make test && make run-asgi
 run-wsgi:
-	gunicorn core.wsgi:application --bind 0.0.0.0:7777
+	gunicorn core.wsgi:application --bind 0.0.0.0:1024
 tunnel:
 	jprq http 7 -s platform
 open-bash:

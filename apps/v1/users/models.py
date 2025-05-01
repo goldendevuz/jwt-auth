@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
+from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.v1.shared.models import BaseModel
@@ -84,7 +85,7 @@ class User(AbstractUser, BaseModel):
     def token(self):
         refresh = RefreshToken.for_user(self)
         return {
-            "access": str(refresh.access_token),
+            "access_token": str(refresh.access_token),
             "refresh_token": str(refresh)
         }
 
@@ -119,7 +120,7 @@ class UserConfirmation(BaseModel):
 
     def save(self, *args, **kwargs):
         if self.verify_type == VIA_EMAIL:  # 30-mart 11-33 + 5minutes
-            self.expiration_time = datetime.now() + timedelta(minutes=EMAIL_EXPIRE)
+            self.expiration_time = timezone.now() + timedelta(minutes=EMAIL_EXPIRE)
         else:
-            self.expiration_time = datetime.now() + timedelta(minutes=PHONE_EXPIRE)
+            self.expiration_time = timezone.now() + timedelta(minutes=PHONE_EXPIRE)
         super(UserConfirmation, self).save(*args, **kwargs)

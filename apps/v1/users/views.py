@@ -1,10 +1,8 @@
-from urllib.parse import quote
-from decouple import config
+import random
+import string
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import datetime
-from icecream import ic
 from rest_framework import permissions, status
-from rest_framework.decorators import permission_classes
 from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -13,12 +11,13 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.decorators import api_view
 
-from apps.v1.shared.custom_responses import success_response
-from apps.v1.shared.utility import send_email, check_email_or_phone, send_phone_code
+from apps.v1.shared.utils.response import success_response
+from apps.v1.shared.utility import send_email, check_username_phone_email, send_phone_code
 from .serializers import SignUpSerializer, ChangeUserInformation, ChangeUserPhotoSerializer, LoginSerializer, \
-    LoginRefreshSerializer, LogoutSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
-from .models import User, DONE, CODE_VERIFIED, NEW, VIA_EMAIL, VIA_PHONE, UserConfirmation
+    LoginRefreshSerializer, LogoutSerializer, ResetPasswordSerializer
+from .models import User, CODE_VERIFIED, NEW, VIA_EMAIL, VIA_PHONE, UserConfirmation
 
 
 class CreateUserView(CreateAPIView):
@@ -36,7 +35,7 @@ class VerifyAPIView(APIView):
         # if user.auth_status != NEW:
         #     data = {
         #         "auth_status": user.auth_status,
-        #         "detail": "Siz allaqachon tasdiqlangan hisobga egasiz"
+        #         "message": "Siz allaqachon tasdiqlangan hisobga egasiz"
         #     }
         #     raise ValidationError(data)
 
@@ -44,7 +43,7 @@ class VerifyAPIView(APIView):
         return Response(
             data={
                 "auth_status": user.auth_status,
-                "access": user.token()['access'],
+                "access_token": user.token()['access_token'],
                 "refresh": user.token()['refresh_token']
             }
         )
@@ -59,7 +58,7 @@ class VerifyAPIView(APIView):
         usr = UserConfirmation.objects.filter(user_id=user.id, code=code).first()
         if not verifies.exists():
             data = {
-                "detail": "Tasdiqlash kodingiz xato yoki eskirgan"
+                "message": "Tasdiqlash kodingiz xato yoki eskirgan"
             }
             raise ValidationError(data)
         else:
@@ -83,7 +82,7 @@ class GetNewVerification(APIView):
         #     data = {
         #         "success": True,
         #         "auth_status": user.auth_status,
-        #         "detail": "Siz allaqachon tasdiqlangan hisobga egasiz"
+        #         "message": "Siz allaqachon tasdiqlangan hisobga egasiz"
         #     }
         #     raise ValidationError(data)
         # ic(request.user.__dict__)
@@ -96,14 +95,14 @@ class GetNewVerification(APIView):
             send_phone_code(user.phone_number, code)
         else:
             data = {
-                "detail": "Email yoki telefon raqami notogri"
+                "message": "Email yoki telefon raqami notogri"
             }
             raise ValidationError(data)
 
         return Response(
             {
                 "success": True,
-                "detail": "Tasdiqlash kodingiz qaytadan jo'natildi."
+                "message": "Tasdiqlash kodingiz qaytadan jo'natildi."
             }
         )
 
@@ -112,12 +111,12 @@ class GetNewVerification(APIView):
         verifies = user.verify_codes.filter(expiration_time__gte=datetime.now(), is_confirmed=False)
         if verifies.exists():
             data = {
-                "detail": "Kodingiz hali ishlatish uchun yaroqli. Biroz kutib turing"
+                "message": "Kodingiz hali ishlatish uchun yaroqli. Biroz kutib turing"
             }
             raise ValidationError(data)
 
 
-class ChangeUserInformationView(UpdateAPIView):
+class UpdateUserInformationView(UpdateAPIView):
     permission_classes = [IsAuthenticated, ]
     serializer_class = ChangeUserInformation
     http_method_names = ('patch',)
@@ -129,14 +128,14 @@ class ChangeUserInformationView(UpdateAPIView):
         if not request.data:
             return Response({
                 'success': False,
-                'detail': 'No data provided for update.',
+                'message': 'No data provided for update.',
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        super(ChangeUserInformationView, self).partial_update(request, *args, **kwargs)
+        super(UpdateUserInformationView, self).partial_update(request, *args, **kwargs)
         
         data = {
             'success': True,
-            "detail": "User updated successfully",
+            "message": "User updated successfully",
             'auth_status': self.request.user.auth_status,
         }
         return Response(data, status=status.HTTP_200_OK)
@@ -177,62 +176,70 @@ class LogOutView(APIView):
             token.blacklist()
             data = {
                 'success': True,
-                'detail': "You are loggout out"
+                'message': "You are loggout out"
             }
             return Response(data, status=205)
         except TokenError:
             data = {
-                "detail": "Token is invalid or expired"
+                "message": "Token is invalid or expired"
             }
             raise ValidationError(data)
 
 
-class ForgotPasswordView(APIView):
-    permission_classes = [AllowAny, ]
-    serializer_class = ForgotPasswordSerializer
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = ResetPasswordSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=self.request.data)
         serializer.is_valid(raise_exception=True)
-        email_or_phone = serializer.validated_data.get('email_or_phone')
+        username_phone_email = serializer.validated_data.get('username_phone_email')
         user = serializer.validated_data.get('user')
-        if check_email_or_phone(email_or_phone) == 'phone':
+        if check_username_phone_email(username_phone_email) == 'phone':
             code = user.create_verify_code(VIA_PHONE)
-            send_email(email_or_phone, code)
-        elif check_email_or_phone(email_or_phone) == 'email':
+            send_email(username_phone_email, code)
+        elif check_username_phone_email(username_phone_email) == 'email':
             code = user.create_verify_code(VIA_EMAIL)
-            send_email(email_or_phone, code)
+            send_email(username_phone_email, code)
 
         return Response(
             {
                 "success": True,
-                'detail': "Tasdiqlash kodi muvaffaqiyatli yuborildi",
-                "access": user.token()['access'],
+                'message': "Tasdiqlash kodi muvaffaqiyatli yuborildi",
+                "access_token": user.token()['access_token'],
                 "refresh": user.token()['refresh_token'],
                 "user_status": user.auth_status,
             }, status=status.HTTP_200_OK
         )
 
+class PasswordGeneratorView(APIView):
+    permission_classes = [permissions.AllowAny]
+    def get(self, request):
+        length = int(request.query_params.get('length', 8))
+        include_upper = request.query_params.get('upper', 'true') == 'true'
+        include_lower = request.query_params.get('lower', 'true') == 'true'
+        include_digits = request.query_params.get('digits', 'true') == 'true'
+        include_symbols = request.query_params.get('symbols', 'false') == 'true'
 
-class ResetPasswordView(UpdateAPIView):
-    serializer_class = ResetPasswordSerializer
-    permission_classes = [IsAuthenticated, ]
-    http_method_names = ('patch',)
+        if length < 8:
+            return Response({"error": "Minimum password length is 8."}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_object(self):
-        return self.request.user
+        charset = ''
+        if include_upper:
+            charset += string.ascii_uppercase
+        if include_lower:
+            charset += string.ascii_lowercase
+        if include_digits:
+            charset += string.digits
+        if include_symbols:
+            charset += string.punctuation
 
-    def update(self, request, *args, **kwargs):
-        response = super(ResetPasswordView, self).update(request, *args, **kwargs)
-        try:
-            user = User.objects.get(id=response.data.get('id'))
-        except ObjectDoesNotExist as e:
-            raise NotFound(detail='User not found')
-        return Response(
-            {
-                'success': True,
-                'detail': "Parolingiz muvaffaqiyatli o'zgartirildi",
-                'access': user.token()['access'],
-                'refresh': user.token()['refresh_token'],
-            }
-        )
+        if not charset:
+            return Response({"error": "No character sets selected."}, status=status.HTTP_400_BAD_REQUEST)
+
+        password = ''.join(random.SystemRandom().choice(charset) for _ in range(length))
+        return Response({"password": password}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def test_login(request):
+    return Response({"message": "Hello, world!"})

@@ -173,6 +173,7 @@ cython_debug/
 #other
 playground/
 staticfiles/
+media/
 
 # Ignore migration files, but not __init__.py
 **/migrations/*
