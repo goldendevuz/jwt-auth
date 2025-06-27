@@ -19,5 +19,4 @@ eskiz_sms
 environs
 pytest
 pytest-factoryboy
-drf-restwind
 drf-standardized-errors
