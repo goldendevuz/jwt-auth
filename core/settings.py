@@ -31,8 +31,7 @@ INSTALLED_APPS = [
 ]
 
 THIRD_APPS = {
-    # 'drf_material',
-    "rest_wind",
+    'drf_material',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
