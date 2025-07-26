@@ -5,7 +5,7 @@ act-env:
 i:
 	pip install --upgrade pip && pip install -r requirements.txt
 mig:
-	make migration && make migrate
+	make migration && make irate
 cru:
 	python manage.py createsuperuser
 test:
@@ -40,7 +40,7 @@ re-django:
 no-venv:
 	rm -rf env/ venv/ .venv/
 re-mig:
-	make no-sqlite-db && make clear-linux && make re-django && make mig && make cru && make collect && make test && make run-asgi
+	make no-sqlite-db && make clear-linux && make re-django && make i && make mig && make cru && make collect && make test && make run-asgi
 run-wsgi:
 	gunicorn core.wsgi:application --bind 0.0.0.0:1024
 tunnel:
