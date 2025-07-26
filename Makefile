@@ -5,7 +5,7 @@ act-env:
 i:
 	pip install --upgrade pip && pip install -r requirements.txt
 mig:
-	make migration && make irate
+	make migration && make migrate
 cru:
 	python manage.py createsuperuser
 test:
