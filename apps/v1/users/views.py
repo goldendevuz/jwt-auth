@@ -1,9 +1,8 @@
 import random
 import string
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils.timezone import datetime
+from django.utils import timezone
 from rest_framework import permissions, status
-from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -50,7 +49,7 @@ class VerifyAPIView(APIView):
 
     @staticmethod
     def check_verify(user, code):       # 12:03 -> 12:05 => expiration_time=12:05   12:04
-        verifies = user.verify_codes.filter(expiration_time__gte=datetime.now(), code=code, is_confirmed=False)
+        verifies = user.verify_codes.filter(expiration_time__gte=timezone.now(), code=code, is_confirmed=False)
         # ic(verifies)
         # ic(user.__dict__)
         # ic(code)
@@ -108,7 +107,7 @@ class GetNewVerification(APIView):
 
     @staticmethod
     def check_verification(user):
-        verifies = user.verify_codes.filter(expiration_time__gte=datetime.now(), is_confirmed=False)
+        verifies = user.verify_codes.filter(expiration_time__gte=timezone.now(), is_confirmed=False)
         if verifies.exists():
             data = {
                 "message": "Kodingiz hali ishlatish uchun yaroqli. Biroz kutib turing"
