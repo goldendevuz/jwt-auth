@@ -3,7 +3,6 @@ djangorestframework
 python-decouple
 djangorestframework-simplejwt
 pillow
-twilio
 phonenumbers
 django-jazzmin
 drf-material
@@ -15,8 +14,4 @@ django-debug-toolbar
 django-cors-headers
 django-extensions
 django-import-export[all]
-eskiz_sms
-environs
-pytest
-pytest-factoryboy
 drf-standardized-errors
